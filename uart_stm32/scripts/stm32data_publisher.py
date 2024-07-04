@@ -152,21 +152,21 @@ class stm32data_publisher(object):
             # 发布消息
             self.stm32data_info_pub.publish(self.stm32data_msg)
             
-            # rospy.loginfo("Publsh stm32data message[%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d]", 
-            #     self.stm32data_msg.voltage00,
-            #     self.stm32data_msg.voltage01,
-            #     self.stm32data_msg.voltage02,
-            #     self.stm32data_msg.voltage03,
-            #     self.stm32data_msg.voltage04,
-            #     self.stm32data_msg.voltage05,
-            #     self.stm32data_msg.voltage06,
-            #     self.stm32data_msg.voltage07,
-            #     self.stm32data_msg.voltage08,
-            #     self.stm32data_msg.voltage09,
-            #     self.stm32data_msg.voltage10,
-            #     self.stm32data_msg.voltage11,
-            #     self.stm32data_msg.voltage12,
-            #     self.stm32data_msg.voltage13)     
+            rospy.loginfo("Publsh stm32data message[%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d]", 
+                self.stm32data_msg.voltage00,
+                self.stm32data_msg.voltage01,
+                self.stm32data_msg.voltage02,
+                self.stm32data_msg.voltage03,
+                self.stm32data_msg.voltage04,
+                self.stm32data_msg.voltage05,
+                self.stm32data_msg.voltage06,
+                self.stm32data_msg.voltage07,
+                self.stm32data_msg.voltage08,
+                self.stm32data_msg.voltage09,
+                self.stm32data_msg.voltage10,
+                self.stm32data_msg.voltage11,
+                self.stm32data_msg.voltage12,
+                self.stm32data_msg.voltage13)     
 
             # 按照循环频率延时
             rate.sleep()
@@ -174,12 +174,12 @@ class stm32data_publisher(object):
 if __name__ == '__main__':
     try:
         spub=stm32data_publisher(node_name='stm32data_publisher',topic_name='/stm32data_info',topic_queue_size=16)
-        recv = ReceiveData("/dev/ttyUSB0",921600)
+        recv = ReceiveData("/dev/ttyUSB4",921600)
 
         thread1 = threading.Thread(target=recv.read, name='uart_rec', daemon=True)
         thread1.start()
 
-        spub.publish(rosRate=500)
+        spub.publish(rosRate=20)
 
     except rospy.ROSInterruptException:
         pass
