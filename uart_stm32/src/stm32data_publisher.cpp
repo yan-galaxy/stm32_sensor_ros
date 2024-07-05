@@ -5,15 +5,17 @@
 #include "serialPort.hpp"
 #include "uart_stm32/stm32data.h"
 #include <mutex>
+#include <stdlib.h>
+#include <serial/serial.h>
 
-
+bool serial_open;
 uint8_t rx_buff[512];
 uint8_t rx_stat;
 uint8_t rx_num;
 uint8_t vol_initial[32];
 uint8_t crc_recv[2];
 uint8_t zhenwei_recv[2];
-const char *dev  = "/dev/ttyUSB4";// ls -l /dev/ttyUSB*
+const char *dev  = "/dev/ttyUSB3";// ls -l /dev/ttyUSB*
 uint32_t right_cnt;
 uint32_t wrong_cnt;
 
@@ -31,7 +33,13 @@ void serial_proj()
     mtx.unlock();
     serialPort myserial;
     int nread,i;
-    myserial.OpenPort(dev);
+    serial_open=myserial.OpenPort(dev);
+    
+    mtx.lock();
+    ROS_INFO("serial_open:%d",serial_open);
+    mtx.unlock();
+    if(serial_open==0)exit(100);
+
     myserial.setup(B921600,0,8,1,'N'); 
 
     while (true)
@@ -63,7 +71,20 @@ void serial_proj()
                 break;
             case 4:
                 crc_recv[1]=rx_buff[0];
-                rx_stat=0;
+                rx_stat=5;
+                break;
+            case 5:
+                if(rx_buff[0]==0xDD) rx_stat=6;
+                else rx_stat=0;
+                break;
+            case 6:
+                if(rx_buff[0]==0xCC) rx_stat=0;
+                else 
+                {
+                    rx_stat=0;
+                    break;
+                }
+                
             // case 5:
             //     zhenwei_recv[0]=rx_buff[0];
             //     rx_stat=0;
@@ -103,7 +124,7 @@ void serial_proj()
                 else
                 {
                     wrong_cnt++;
-                    mtx.lock();
+                    // mtx.lock();
                     // ROS_INFO("\r\n");
                     // ROS_INFO("data ERROR!");
                     // ROS_INFO("recv_data:%4x calc_data:%4x",crc_recv[0]+(crc_recv[1]<<8),usMBCRC16(vol_initial,32));
@@ -131,8 +152,8 @@ void serial_proj()
                     //     ROS_INFO("wrong_recv_crc:0x%4X",crc_recv[0]+(crc_recv[1]<<8));
                     //     ROS_INFO("wrong_calc_crc:0x%4X",wrong_calc[wrong_cnt-1]);
                     // }
-                    ROS_INFO("right_cnt:%d wrong_cnt:%d error rate:%.1f%%",right_cnt,wrong_cnt,((double)wrong_cnt)/(wrong_cnt+right_cnt)*100);
-                    mtx.unlock();
+                    // ROS_INFO("right_cnt:%d wrong_cnt:%d error rate:%.1f%%",right_cnt,wrong_cnt,((double)wrong_cnt)/(wrong_cnt+right_cnt)*100);
+                    // mtx.unlock();
 
                     
                 }
@@ -150,7 +171,7 @@ void ros_proj(ros::Publisher pub,ros::Rate rosrate)
     {
         // 发布消息
 		pub.publish(stm32data_msg);
-        // mtx.lock();
+        mtx.lock();
         // ROS_INFO("Publish stm32data_info:");
        	// ROS_INFO("%d %d %d %d %d %d %d %d %d %d %d %d %d %d ", 
 		// 		  stm32data_msg.voltage00, stm32data_msg.voltage01, stm32data_msg.voltage02, stm32data_msg.voltage03,
@@ -158,15 +179,14 @@ void ros_proj(ros::Publisher pub,ros::Rate rosrate)
         //           stm32data_msg.voltage08, stm32data_msg.voltage09, stm32data_msg.voltage10, stm32data_msg.voltage11,
         //           stm32data_msg.voltage12, stm32data_msg.voltage13
         //           );
-        // ROS_INFO("right_cnt:%d wrong_cnt:%d",right_cnt,wrong_cnt);
-        // mtx.unlock();
+        ROS_INFO("right_cnt:%d wrong_cnt:%d error rate:%.1f%%",right_cnt,wrong_cnt,((double)wrong_cnt)/(wrong_cnt+right_cnt)*100);
+        mtx.unlock();
         // 按照循环频率延时
         rosrate.sleep();
     }
 }
 int main(int argc, char **argv)
 {
-    
 
     // ROS节点初始化
     ros::init(argc, argv, "stm32data_publisher");

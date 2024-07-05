@@ -174,12 +174,12 @@ class stm32data_publisher(object):
 if __name__ == '__main__':
     try:
         spub=stm32data_publisher(node_name='stm32data_publisher',topic_name='/stm32data_info',topic_queue_size=16)
-        recv = ReceiveData("/dev/ttyUSB4",921600)
+        recv = ReceiveData("/dev/ttyUSB0",921600)
 
         thread1 = threading.Thread(target=recv.read, name='uart_rec', daemon=True)
         thread1.start()
 
-        spub.publish(rosRate=20)
+        spub.publish(rosRate=200)
 
     except rospy.ROSInterruptException:
         pass
