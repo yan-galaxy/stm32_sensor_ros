@@ -333,7 +333,7 @@ int main( int argc, char** argv )
     wzSerialportPlus.setReceiveCalback(serial_callback);
 
     ros::Publisher marker_pub = n2.advertise<visualization_msgs::Marker>("visualization_marker", 1);
-    ros::Rate loop_rate2(50);
+    ros::Rate loop_rate2(100);
     
     thread serial_thread(serial_proj,wzSerialportPlus);
     thread data_process_thread(data_pro_proj);
