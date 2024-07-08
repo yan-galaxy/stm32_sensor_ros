@@ -174,9 +174,11 @@ set(PUB2_LIST src/visual_maker.cpp src/visual_process.cpp)
 add_executable(visual_maker ${PUB2_LIST})# src/visual_maker.cpp
 target_link_libraries(visual_maker ${catkin_LIBRARIES})
 
-set(PUB3_LIST src/mix_uart_visual.cpp src/visual_process.cpp src/crc_test.cpp src/serialPort.cpp)
+set(PUB3_LIST src/mix_uart_visual.cpp src/WzSerialportPlus.cpp src/visual_process.cpp src/crc_test.cpp src/serialPort.cpp)
 add_executable(mix_uart_visual ${PUB3_LIST})# src/mix_uart_visual.cpp
 target_link_libraries(mix_uart_visual ${catkin_LIBRARIES})
+
+
 #############
 ## Install ##
 #############

@@ -3,29 +3,23 @@
 #include <iostream>
 #include <thread>
 #include "head.h"
-#include "serialPort.hpp"
 #include "uart_stm32/stm32data.h"
 #include <mutex>
 #include <stdlib.h>
+#include "WzSerialportPlus.h"
+#include <queue>
+#include <unistd.h> 
 
+using namespace std;
 bool serial_open;
-uint8_t rx_buff[512];
-uint8_t rx_stat;
-uint8_t rx_num;
-uint8_t vol_initial[32];
-uint8_t crc_recv[2];
-uint8_t zhenwei_recv[2];
-const char *dev  = "/dev/ttyUSB0";// ls -l /dev/ttyUSB*
+queue<char> Queue;
 uint32_t right_cnt;
 uint32_t wrong_cnt;
 
-uint8_t wrong_data[50000][34];
-uint16_t wrong_calc[50000];
-
-
 uart_stm32::stm32data stm32data_msg;
 visualization_msgs::Marker marker[14];
-mutex mtx;
+mutex mtx;//互斥锁
+
 
 void visual_proj(ros::Publisher pub,ros::Rate rosrate)
 {
@@ -182,142 +176,125 @@ void visual_proj(ros::Publisher pub,ros::Rate rosrate)
     }
 }
 
-void serial_proj()
+void serial_callback(char* data,int length)
 {
-    mtx.lock();
-    ROS_INFO("serial_thread run success\r\n");
-    mtx.unlock();
-    serialPort myserial;
-    int nread,i;
-    serial_open=myserial.OpenPort(dev);
-    
-    mtx.lock();
-    ROS_INFO("serial_open:%d",serial_open);
-    mtx.unlock();
-    if(serial_open==0)exit(100);
-
-    myserial.setup(B921600,0,8,1,'N'); 
-
-    while (true)
+    int i=0;
+    for(i=0;i<length;i++)
     {
-        // nwrite = myserial.writeBuffer( buff, 8);
-        nread = myserial.readBuffer( rx_buff, 1);
-        switch(rx_stat)
+        Queue.push(data[i]);
+    }
+    // mtx.lock();
+    // ROS_INFO("queue size:%d\n",(int)Queue.size());
+    // mtx.unlock();
+}
+void serial_proj(WzSerialportPlus WzSerialport)
+{
+    if(WzSerialport.open("/dev/ttyUSB0",921600,1,8,'n'))
+    {
+        getchar();
+        WzSerialport.close();
+    }
+    else 
+    {
+        ROS_INFO("Serial Open Error!!!!!!!!\n");
+        exit(100);
+    }
+}
+
+void data_pro_proj()
+{
+    uint8_t i,stat=0;
+    uint8_t data_buff[32]={0};
+    uint8_t crc_recv[2];
+    while(1)
+    {
+        if(!Queue.empty())
+        switch(stat)
         {
             case 0:
-                if(rx_buff[0]==0xFF) rx_stat=1;
-                else rx_stat=0;
+                if((uint8_t)Queue.front()==0xFF) stat=1;
+                else stat=0;
+                Queue.pop();
                 break;
             case 1:
-                if(rx_buff[0]==0xEE) rx_stat=2;
-                else rx_stat=0;
+                if((uint8_t)Queue.front()==0xEE) stat=2;
+                else stat=0;
+                Queue.pop();
                 break;
-            case 2:  
-                vol_initial[rx_num]=rx_buff[0];
-                rx_num++;
-                if(rx_num>=32)
+            case 2: case 3: case 4: case 5: case 6: case 7: case 8: case 9: case 10: 
+                case 11: case 12: case 13: case 14: case 15: case 16: case 17: case 18: case 19: 
+                case 20: case 21: case 22: case 23: case 24: case 25: case 26: case 27: case 28: 
+                case 29: case 30: case 31: case 32: case 33: 
+                data_buff[stat-2]=(uint8_t)Queue.front();
+                Queue.pop();
+                stat++;
+                break;
+            case 34:
+                crc_recv[0]=(uint8_t)Queue.front();
+                Queue.pop();
+                stat=35;
+                break;
+            case 35:
+                crc_recv[1]=(uint8_t)Queue.front();
+                Queue.pop();
+                stat=36;
+                break;
+            case 36:
+                if((uint8_t)Queue.front()==0xDD) stat=37;
+                else stat=0;
+                Queue.pop();
+                break;
+            case 37:
+                stat=0;
+                if((uint8_t)Queue.front()==0xCC)
                 {
-                    rx_num=0;
-                    rx_stat=3;
+                    Queue.pop();
                 }
-                break;
-            case 3:
-                crc_recv[0]=rx_buff[0];
-                rx_stat=4;
-                break;
-            case 4:
-                crc_recv[1]=rx_buff[0];
-                rx_stat=5;
-                break;
-            case 5:
-                if(rx_buff[0]==0xDD) rx_stat=6;
-                else rx_stat=0;
-                break;
-            case 6:
-                if(rx_buff[0]==0xCC) rx_stat=0;
                 else 
                 {
-                    rx_stat=0;
+                    Queue.pop();
                     break;
                 }
-                
-            // case 5:
-            //     zhenwei_recv[0]=rx_buff[0];
-            //     rx_stat=0;
 
-                if(usMBCRC16(vol_initial,32)==crc_recv[0]+(crc_recv[1]<<8))
+                if(usMBCRC16(data_buff,32)==crc_recv[0]+(crc_recv[1]<<8))
                 {
-                    stm32data_msg.voltage00=vol_initial[0]+(vol_initial[1]<<8);
-                    stm32data_msg.voltage01=vol_initial[2]+(vol_initial[3]<<8);
-                    stm32data_msg.voltage02=vol_initial[4]+(vol_initial[5]<<8);
-                    stm32data_msg.voltage03=vol_initial[6]+(vol_initial[7]<<8);
-                    stm32data_msg.voltage04=vol_initial[8]+(vol_initial[9]<<8);
-                    stm32data_msg.voltage05=vol_initial[10]+(vol_initial[11]<<8);
-                    stm32data_msg.voltage06=vol_initial[12]+(vol_initial[13]<<8);
-                    stm32data_msg.voltage07=vol_initial[14]+(vol_initial[15]<<8);
-                    stm32data_msg.voltage08=vol_initial[16]+(vol_initial[17]<<8);
-                    stm32data_msg.voltage09=vol_initial[18]+(vol_initial[19]<<8);
-                    stm32data_msg.voltage10=vol_initial[20]+(vol_initial[21]<<8);
-                    stm32data_msg.voltage11=vol_initial[22]+(vol_initial[23]<<8);
-                    stm32data_msg.voltage12=vol_initial[24]+(vol_initial[25]<<8);
-                    stm32data_msg.voltage13=vol_initial[26]+(vol_initial[27]<<8);
-
+                    right_cnt++;
+                    stm32data_msg.voltage00=data_buff[0]+(data_buff[1]<<8);
+                    stm32data_msg.voltage01=data_buff[2]+(data_buff[3]<<8);
+                    stm32data_msg.voltage02=data_buff[4]+(data_buff[5]<<8);
+                    stm32data_msg.voltage03=data_buff[6]+(data_buff[7]<<8);
+                    stm32data_msg.voltage04=data_buff[8]+(data_buff[9]<<8);
+                    stm32data_msg.voltage05=data_buff[10]+(data_buff[11]<<8);
+                    stm32data_msg.voltage06=data_buff[12]+(data_buff[13]<<8);
+                    stm32data_msg.voltage07=data_buff[14]+(data_buff[15]<<8);
+                    stm32data_msg.voltage08=data_buff[16]+(data_buff[17]<<8);
+                    stm32data_msg.voltage09=data_buff[18]+(data_buff[19]<<8);
+                    stm32data_msg.voltage10=data_buff[20]+(data_buff[21]<<8);
+                    stm32data_msg.voltage11=data_buff[22]+(data_buff[23]<<8);
+                    stm32data_msg.voltage12=data_buff[24]+(data_buff[25]<<8);
+                    stm32data_msg.voltage13=data_buff[26]+(data_buff[27]<<8);
+                    // mtx.lock();
+                    // ROS_INFO("data correct!\r\n");
                     // for(i=0;i<32;i++)
                     // {
-                    //     printf("0x%2X ",vol_data[i]);
+                    //     printf("0x%2X ",data_buff[i]);
                     // }
                     // printf("\r\n");
-                    right_cnt++;
-                    
-                    // printf("crc:0x%4X ",crc_recv[0]+(crc_recv[1]<<8));
-                    // printf("\r\n");
-
-                    // mtx.lock();
-                    // ROS_INFO("data correct\r\n");
-                    // mtx.unlock();
-                    // usleep(1000*500);
+                    // ROS_INFO("crc:0x%4X ",crc_recv[0]+(crc_recv[1]<<8));
+                    // mtx.unlock();             
                 }
                 else
                 {
                     wrong_cnt++;
-                    // mtx.lock();
-                    // ROS_INFO("\r\n");
-                    // ROS_INFO("data ERROR!");
-                    // ROS_INFO("recv_data:%4x calc_data:%4x",crc_recv[0]+(crc_recv[1]<<8),usMBCRC16(vol_initial,32));
-                    // ROS_INFO("\r\n");
-
-                    // if(wrong_cnt<=50000)
-                    // {
-                    //     for(i=0;i<32;i++)
-                    //     {
-                    //         wrong_data[wrong_cnt-1][i]=vol_initial[i];
-                    //     }
-                    //     wrong_data[wrong_cnt-1][32]=crc_recv[0];
-                    //     wrong_data[wrong_cnt-1][33]=crc_recv[1];
-                    //     wrong_calc[wrong_cnt-1]=usMBCRC16(vol_initial,32);
-                    //     ROS_INFO("%2X %2X %2X %2X %2X %2X %2X %2X %2X %2X %2X %2X %2X %2X %2X %2X %2X %2X %2X %2X %2X %2X %2X %2X %2X %2X %2X %2X %2X %2X %2X %2X", 
-                    //             wrong_data[wrong_cnt-1][ 0],wrong_data[wrong_cnt-1][ 1],wrong_data[wrong_cnt-1][ 2],wrong_data[wrong_cnt-1][ 3],
-                    //             wrong_data[wrong_cnt-1][ 4],wrong_data[wrong_cnt-1][ 5],wrong_data[wrong_cnt-1][ 6],wrong_data[wrong_cnt-1][ 7],
-                    //             wrong_data[wrong_cnt-1][ 8],wrong_data[wrong_cnt-1][ 9],wrong_data[wrong_cnt-1][10],wrong_data[wrong_cnt-1][11],
-                    //             wrong_data[wrong_cnt-1][12],wrong_data[wrong_cnt-1][13],wrong_data[wrong_cnt-1][14],wrong_data[wrong_cnt-1][15],
-                    //             wrong_data[wrong_cnt-1][16],wrong_data[wrong_cnt-1][17],wrong_data[wrong_cnt-1][18],wrong_data[wrong_cnt-1][19],
-                    //             wrong_data[wrong_cnt-1][20],wrong_data[wrong_cnt-1][21],wrong_data[wrong_cnt-1][22],wrong_data[wrong_cnt-1][23],
-                    //             wrong_data[wrong_cnt-1][24],wrong_data[wrong_cnt-1][25],wrong_data[wrong_cnt-1][26],wrong_data[wrong_cnt-1][27],
-                    //             wrong_data[wrong_cnt-1][28],wrong_data[wrong_cnt-1][29],wrong_data[wrong_cnt-1][30],wrong_data[wrong_cnt-1][31]
-                    //             );
-                    //     ROS_INFO("wrong_recv_crc:0x%4X",crc_recv[0]+(crc_recv[1]<<8));
-                    //     ROS_INFO("wrong_calc_crc:0x%4X",wrong_calc[wrong_cnt-1]);
-                    // }
-                    // ROS_INFO("right_cnt:%d wrong_cnt:%d error rate:%.1f%%",right_cnt,wrong_cnt,((double)wrong_cnt)/(wrong_cnt+right_cnt)*100);
-                    // mtx.unlock();
-
-                    
+                    mtx.lock();
+                    ROS_INFO("right_cnt:%d wrong_cnt:%d error rate:%.1f%%",right_cnt,wrong_cnt,((double)wrong_cnt)/(wrong_cnt+right_cnt)*100);
+                    mtx.unlock();
                 }
                 break;
         }
-        // usleep(400);
     }
 }
+
 void ros_proj(ros::Publisher pub,ros::Rate rosrate)
 {
     mtx.lock();
@@ -328,16 +305,16 @@ void ros_proj(ros::Publisher pub,ros::Rate rosrate)
     {
         // 发布消息
 		pub.publish(stm32data_msg);
-        mtx.lock();
+        // mtx.lock();
         // ROS_INFO("Publish stm32data_info:");
-       	ROS_INFO("v00:%4d v01:%4d v02:%4d v03:%4d v04:%4d v05:%4d v06:%4d v07:%4d v08:%4d v09:%4d v10:%4d v11:%4d v12:%4d v13:%4d", 
-				  stm32data_msg.voltage00, stm32data_msg.voltage01, stm32data_msg.voltage02, stm32data_msg.voltage03,
-                  stm32data_msg.voltage04, stm32data_msg.voltage05, stm32data_msg.voltage06, stm32data_msg.voltage07,
-                  stm32data_msg.voltage08, stm32data_msg.voltage09, stm32data_msg.voltage10, stm32data_msg.voltage11,
-                  stm32data_msg.voltage12, stm32data_msg.voltage13
-                  );
+       	// ROS_INFO("v00:%4d v01:%4d v02:%4d v03:%4d v04:%4d v05:%4d v06:%4d v07:%4d v08:%4d v09:%4d v10:%4d v11:%4d v12:%4d v13:%4d", 
+		// 		  stm32data_msg.voltage00, stm32data_msg.voltage01, stm32data_msg.voltage02, stm32data_msg.voltage03,
+        //           stm32data_msg.voltage04, stm32data_msg.voltage05, stm32data_msg.voltage06, stm32data_msg.voltage07,
+        //           stm32data_msg.voltage08, stm32data_msg.voltage09, stm32data_msg.voltage10, stm32data_msg.voltage11,
+        //           stm32data_msg.voltage12, stm32data_msg.voltage13
+        //           );
         // ROS_INFO("right_cnt:%d wrong_cnt:%d error rate:%.1f%%",right_cnt,wrong_cnt,((double)wrong_cnt)/(wrong_cnt+right_cnt)*100);
-        mtx.unlock();
+        // mtx.unlock();
         // 按照循环频率延时
         rosrate.sleep();
     }
@@ -352,16 +329,19 @@ int main( int argc, char** argv )
 
     ros::Publisher stm32data_info_pub = n1.advertise<uart_stm32::stm32data>("/stm32data_info", 38);
     ros::Rate loop_rate1(100);
-
+    WzSerialportPlus wzSerialportPlus;
+    wzSerialportPlus.setReceiveCalback(serial_callback);
 
     ros::Publisher marker_pub = n2.advertise<visualization_msgs::Marker>("visualization_marker", 1);
     ros::Rate loop_rate2(50);
     
-    thread serial_thread(serial_proj);
+    thread serial_thread(serial_proj,wzSerialportPlus);
+    thread data_process_thread(data_pro_proj);
     thread ros_thread(ros_proj,stm32data_info_pub,loop_rate1);
     thread visual_thread(visual_proj,marker_pub,loop_rate2);
 
     serial_thread.join();
+    data_process_thread.join();
     ros_thread.join();
     visual_thread.join();
 
