@@ -127,24 +127,24 @@ void visual_proj(ros::Publisher pub,ros::Rate rosrate)
     );
     while (ros::ok())
     {
-        GrayToPseColor(stm32data_msg.voltage01,&marker[1].color.r,&marker[1].color.g,&marker[1].color.b);
-        GrayToPseColor(stm32data_msg.voltage09,&marker[9].color.r,&marker[9].color.g,&marker[9].color.b);
-        GrayToPseColor(stm32data_msg.voltage03,&marker[3].color.r,&marker[3].color.g,&marker[3].color.b);
-        GrayToPseColor(stm32data_msg.voltage02,&marker[2].color.r,&marker[2].color.g,&marker[2].color.b);
-        GrayToPseColor(stm32data_msg.voltage04,&marker[4].color.r,&marker[4].color.g,&marker[4].color.b);
-        GrayToPseColor(stm32data_msg.voltage08,&marker[8].color.r,&marker[8].color.g,&marker[8].color.b);
-        GrayToPseColor(stm32data_msg.voltage05,&marker[5].color.r,&marker[5].color.g,&marker[5].color.b);
-        GrayToPseColor(stm32data_msg.voltage13,&marker[13].color.r,&marker[13].color.g,&marker[13].color.b);
-        GrayToPseColor(stm32data_msg.voltage06,&marker[6].color.r,&marker[6].color.g,&marker[6].color.b);
-        GrayToPseColor(stm32data_msg.voltage07,&marker[7].color.r,&marker[7].color.g,&marker[7].color.b);
-        GrayToPseColor(stm32data_msg.voltage12,&marker[12].color.r,&marker[12].color.g,&marker[12].color.b);
-        GrayToPseColor(stm32data_msg.voltage11,&marker[11].color.r,&marker[11].color.g,&marker[11].color.b);
-        GrayToPseColor(stm32data_msg.voltage10,&marker[10].color.r,&marker[10].color.g,&marker[10].color.b);
-        GrayToPseColor(stm32data_msg.voltage00,&marker[0].color.r,&marker[0].color.g,&marker[0].color.b);
+        GrayToPseColor_rainbow1(stm32data_msg.voltage01,&marker[1].color.r,&marker[1].color.g,&marker[1].color.b);
+        GrayToPseColor_rainbow1(stm32data_msg.voltage09,&marker[9].color.r,&marker[9].color.g,&marker[9].color.b);
+        GrayToPseColor_rainbow1(stm32data_msg.voltage03,&marker[3].color.r,&marker[3].color.g,&marker[3].color.b);
+        GrayToPseColor_rainbow1(stm32data_msg.voltage02,&marker[2].color.r,&marker[2].color.g,&marker[2].color.b);
+        GrayToPseColor_rainbow1(stm32data_msg.voltage04,&marker[4].color.r,&marker[4].color.g,&marker[4].color.b);
+        GrayToPseColor_rainbow1(stm32data_msg.voltage08,&marker[8].color.r,&marker[8].color.g,&marker[8].color.b);
+        GrayToPseColor_rainbow1(stm32data_msg.voltage05,&marker[5].color.r,&marker[5].color.g,&marker[5].color.b);
+        GrayToPseColor_rainbow1(stm32data_msg.voltage13,&marker[13].color.r,&marker[13].color.g,&marker[13].color.b);
+        GrayToPseColor_rainbow1(stm32data_msg.voltage06,&marker[6].color.r,&marker[6].color.g,&marker[6].color.b);
+        GrayToPseColor_rainbow1(stm32data_msg.voltage07,&marker[7].color.r,&marker[7].color.g,&marker[7].color.b);
+        GrayToPseColor_rainbow1(stm32data_msg.voltage12,&marker[12].color.r,&marker[12].color.g,&marker[12].color.b);
+        GrayToPseColor_rainbow1(stm32data_msg.voltage11,&marker[11].color.r,&marker[11].color.g,&marker[11].color.b);
+        GrayToPseColor_rainbow1(stm32data_msg.voltage10,&marker[10].color.r,&marker[10].color.g,&marker[10].color.b);
+        GrayToPseColor_rainbow1(stm32data_msg.voltage00,&marker[0].color.r,&marker[0].color.g,&marker[0].color.b);
         
         
-        // GrayToPseColor(color_cnt,&marker[3].color.r,&marker[3].color.g,&marker[3].color.b);
-        // if(cnt==3)
+        // GrayToPseColor_rainbow1(color_cnt,&marker[3].color.r,&marker[3].color.g,&marker[3].color.b);
+        // // if(cnt==3)
         // {
         //     if(color_cnt>=4095) color_cnt=0;
         //     else color_cnt+=4;

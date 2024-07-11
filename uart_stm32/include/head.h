@@ -16,7 +16,7 @@ float scax,float scay,float scaz,
 float colorR,float colorG,float colorB,float colorAlpha);
 
 void GrayToPseColor(uint16_t grayValue, float *colorR,float *colorG,float *colorB);
-
+void GrayToPseColor_rainbow1(uint16_t grayValue, float *colorR,float *colorG,float *colorB);
 
 
 

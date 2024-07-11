@@ -57,3 +57,47 @@ void GrayToPseColor(uint16_t grayValue, float *colorR,float *colorG,float *color
         *colorB=0;
     }
 }
+
+void GrayToPseColor_rainbow1(uint16_t grayValue, float *colorR,float *colorG,float *colorB)
+{
+    // *colorR=(float)abs(0-grayValue)/256.0;
+    // *colorG=(float)abs(127-grayValue)/256.0;
+    // *colorB=(float)abs(255-grayValue)/256.0;
+
+    if( (grayValue>=0) && (grayValue<=511) )  
+    {
+        *colorR=0;
+        *colorG=0;
+        *colorB=(float)grayValue/512.0;
+    }
+    else if( (grayValue>=512) && (grayValue<=1023) )  
+    {
+        *colorR=0;
+        *colorG=(float)(grayValue-512)/512.0;
+        *colorB=1.0;
+    }
+    else if( (grayValue>=1024) && (grayValue<=1535) )  
+    {
+        *colorR=0;
+        *colorG=1.0;
+        *colorB=(float)(1535-grayValue)/512.0;
+    }
+    else if( (grayValue>=1536) && (grayValue<=2047) )  
+    {
+        *colorR=(float)(grayValue-1536)/512.0;
+        *colorG=1.0;
+        *colorB=0;
+    }
+    else if( (grayValue>=2048) && (grayValue<=3071) )  
+    {
+        *colorR=1.0;
+        *colorG=(float)(3071-grayValue)/1024.0;
+        *colorB=0;
+    }
+    else if( (grayValue>=3072) && (grayValue<=4095) )  
+    {
+        *colorR=1.0;
+        *colorG=(float)(grayValue-3072)/1024.0;
+        *colorB=(float)(grayValue-3072)/1024.0;
+    }
+}
