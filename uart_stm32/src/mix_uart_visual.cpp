@@ -189,7 +189,7 @@ void serial_callback(char* data,int length)
 }
 void serial_proj(WzSerialportPlus WzSerialport)
 {
-    if(WzSerialport.open("/dev/ttyUSB0",921600,1,8,'n'))
+    if(WzSerialport.open("/dev/ttyUSB1",921600,1,8,'n'))
     {
         getchar();
         WzSerialport.close();

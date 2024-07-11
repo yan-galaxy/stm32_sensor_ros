@@ -161,10 +161,10 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(CMAKE_CXX_FLAGS -pthread)#添加pthread
 message(STATUS "CMAKE_CXX_FLAGS = ${CMAKE_CXX_FLAGS}")
 
-set(PUB_LIST src/stm32data_publisher.cpp src/crc_test.cpp src/serialPort.cpp)
-add_executable(stm32data_publisher ${PUB_LIST})# src/stm32data_publisher.cpp
-target_link_libraries(stm32data_publisher ${catkin_LIBRARIES})
-add_dependencies(stm32data_publisher ${PROJECT_NAME}_generate_messages_cpp)# 链接自定义消息必须添加的
+# set(PUB_LIST src/stm32data_publisher.cpp src/crc_test.cpp)
+# add_executable(stm32data_publisher ${PUB_LIST})# src/stm32data_publisher.cpp
+# target_link_libraries(stm32data_publisher ${catkin_LIBRARIES})
+# add_dependencies(stm32data_publisher ${PROJECT_NAME}_generate_messages_cpp)# 链接自定义消息必须添加的
 
 add_executable(stm32data_subscriber src/stm32data_subscriber.cpp)
 target_link_libraries(stm32data_subscriber ${catkin_LIBRARIES})
@@ -174,7 +174,7 @@ set(PUB2_LIST src/visual_maker.cpp src/visual_process.cpp)
 add_executable(visual_maker ${PUB2_LIST})# src/visual_maker.cpp
 target_link_libraries(visual_maker ${catkin_LIBRARIES})
 
-set(PUB3_LIST src/mix_uart_visual.cpp src/WzSerialportPlus.cpp src/visual_process.cpp src/crc_test.cpp src/serialPort.cpp)
+set(PUB3_LIST src/mix_uart_visual.cpp src/WzSerialportPlus.cpp src/visual_process.cpp src/crc_test.cpp)
 add_executable(mix_uart_visual ${PUB3_LIST})# src/mix_uart_visual.cpp
 target_link_libraries(mix_uart_visual ${catkin_LIBRARIES})
 
